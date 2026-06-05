@@ -1,0 +1,288 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>NimblePay vs Stripe — Tennis Club Payment Cost Calculator</title>
+<style>
+  :root{
+    --navy:#0A1F3F; --navy2:#14305E; --accent:#3A7BD5; --gold:#C9A84C;
+    --ink:#1f2733; --muted:#5b6573; --line:#e2e6eb; --bg:#f4f6f8; --card:#ffffff;
+    --good:#1b7a4b; --goodbg:#e9f6ef;
+    --font:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font);line-height:1.5;font-size:15px}
+  .wrap{max-width:1060px;margin:0 auto;padding:0 18px 60px}
+  header.top{background:var(--navy);color:#fff;padding:22px 0;margin-bottom:22px}
+  header.top .wrap{padding-top:0;padding-bottom:0}
+  .brand{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+  .logo{height:34px;width:auto;flex:0 0 auto;background:#fff;padding:5px 9px;border-radius:7px}
+  .brandmark{display:inline-flex;align-items:center;gap:10px}
+  .np-badge{display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:9px;background:var(--gold);color:var(--navy);font-weight:900;font-size:19px;line-height:1;flex:0 0 auto;box-shadow:0 1px 2px rgba(0,0,0,.25)}
+  .wordmark{font-weight:800;font-size:19px;letter-spacing:.2px;color:#fff}
+  .wordmark span{font-weight:400;opacity:.9}
+  .brand .name{font-weight:800;letter-spacing:.2px;font-size:18px}
+  .brand .name span{font-weight:400;opacity:.85}
+  .tag{margin-left:auto;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--gold);font-weight:700;border:1px solid rgba(201,168,76,.5);padding:4px 9px;border-radius:999px}
+  h1{font-size:22px;margin:14px 0 4px;font-weight:800}
+  .sub{color:#c8d2e0;font-size:14px;margin:0}
+  .gold-rule{height:3px;background:var(--gold);border:0;margin:14px 0 0;max-width:120px}
+  .cards{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  @media(max-width:760px){.cards{grid-template-columns:1fr}}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:18px 18px 16px;box-shadow:0 1px 2px rgba(10,31,63,.04)}
+  .card h2{font-size:13px;text-transform:uppercase;letter-spacing:.08em;color:var(--navy);margin:0 0 14px;font-weight:800;border-bottom:2px solid var(--accent);padding-bottom:8px}
+  .rail{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:22px}
+  @media(max-width:620px){.rail{grid-template-columns:1fr}}
+  .rail .r{background:#fff;border:1px solid var(--line);border-radius:12px;padding:14px 16px}
+  .rail .r.payto{border-color:var(--accent);background:linear-gradient(180deg,#fff, #f6f9ff)}
+  .rail .r h3{margin:0 0 6px;font-size:14px;color:var(--navy)}
+  .rail .r .fee{font-weight:800;color:var(--navy2);font-size:15px}
+  .rail .r p{margin:6px 0 0;font-size:12.5px;color:var(--muted)}
+  .pill{display:inline-block;font-size:11px;font-weight:700;color:#fff;background:var(--accent);border-radius:999px;padding:2px 8px;margin-bottom:6px}
+  .pill.card{background:var(--muted)}
+  label{display:block;font-size:12.5px;color:var(--muted);margin:0 0 4px;font-weight:600}
+  .field{margin-bottom:12px}
+  .row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  @media(max-width:480px){.row{grid-template-columns:1fr}}
+  input[type=number],select{width:100%;padding:9px 10px;border:1px solid var(--line);border-radius:8px;font-size:15px;font-family:var(--font);background:#fff;color:var(--ink)}
+  input:focus,select:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(58,123,213,.15)}
+  .inline{display:flex;align-items:center;gap:8px}
+  .res{margin-top:14px;border-top:1px solid var(--line);padding-top:12px}
+  table.out{width:100%;border-collapse:collapse;font-size:14px}
+  table.out td{padding:7px 6px;border-bottom:1px solid var(--line)}
+  table.out td:first-child{color:var(--muted)}
+  table.out td.v{text-align:right;font-variant-numeric:tabular-nums;font-weight:600}
+  .save{margin-top:12px;background:var(--goodbg);border:1px solid #c9e7d5;border-radius:10px;padding:12px 14px;display:flex;justify-content:space-between;align-items:baseline;gap:10px}
+  .save .lbl{font-weight:700;color:#155}
+  .save .amt{font-size:22px;font-weight:800;color:var(--good);font-variant-numeric:tabular-nums}
+  .save .pct{font-size:13px;color:#2a6;font-weight:700;margin-left:6px}
+  .assume{background:#fff;border:1px solid var(--line);border-radius:12px;padding:16px 18px;margin-bottom:18px}
+  .assume h2{font-size:13px;text-transform:uppercase;letter-spacing:.08em;color:var(--navy);margin:0 0 12px;font-weight:800}
+  .agrid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+  @media(max-width:760px){.agrid{grid-template-columns:1fr 1fr}}
+  .note{font-size:12px;color:var(--muted);margin:8px 0 0}
+  .chk{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--ink);margin-top:6px}
+  .big{grid-column:1/-1}
+  .headline{background:var(--navy);color:#fff;border-radius:12px;padding:16px 18px;margin:18px 0;display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap}
+  .headline .t{font-size:13px;text-transform:uppercase;letter-spacing:.08em;color:var(--gold);font-weight:800}
+  .headline .n{font-size:26px;font-weight:800;font-variant-numeric:tabular-nums}
+  footer{margin-top:26px;color:var(--muted);font-size:12px;border-top:1px solid var(--line);padding-top:14px}
+  .disc{background:#fff;border-left:4px solid var(--gold);border-radius:6px;padding:12px 14px;font-size:12.5px;color:var(--muted);margin-top:18px}
+  .preset{font-size:12px;color:var(--accent);background:none;border:1px solid var(--accent);border-radius:7px;padding:4px 9px;cursor:pointer;font-weight:700}
+  .preset:hover{background:#eef4ff}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="wrap">
+    <div class="brand">
+      <span class="brandmark" role="img" aria-label="NimblePay"><span class="np-badge" aria-hidden="true">N</span><span class="wordmark">Nimble<span>Pay</span></span></span>
+      <span class="tag">Illustrative model</span>
+    </div>
+    <h1>NimblePay vs Stripe — Tennis Club Payment Cost Calculator</h1>
+    <p class="sub">Compare what a club pays in card fees (Stripe) against NimblePay, a bank-based payment rail, on memberships and court bookings.</p>
+    <hr class="gold-rule">
+  </div>
+</header>
+
+<div class="wrap">
+
+  <!-- two rails explainer -->
+  <div class="rail">
+    <div class="r">
+      <span class="pill card">Card — today</span>
+      <h3>Stripe (card networks)</h3>
+      <div class="fee" id="railStripe">1.70% + $0.30 per payment</div>
+      <p>A percentage of every payment plus a fixed amount. Best for casual, one-off payments and non-members.</p>
+    </div>
+    <div class="r payto">
+      <span class="pill">NimblePay — proposed</span>
+      <h3>NimblePay (bank network / NPP)</h3>
+      <div class="fee" id="railPayto">$0.50 flat per payment</div>
+      <p>A small flat fee, no card-network charges. Best for members and regulars: memberships, coaching, standing bookings.</p>
+    </div>
+  </div>
+
+  <!-- assumptions -->
+  <div class="assume">
+    <h2>Assumptions — edit these</h2>
+    <div class="agrid">
+      <div class="field"><label>Stripe rate (%)</label><input type="number" id="sRate" value="1.70" step="0.01" min="0"></div>
+      <div class="field"><label>Stripe fixed fee ($)</label><input type="number" id="sFix" value="0.30" step="0.01" min="0"></div>
+      <div class="field"><label>NimblePay fee — flat ($)</label><input type="number" id="pFlat" value="0.50" step="0.01" min="0"></div>
+      <div class="field"><label>NimblePay fee — extra (%)</label><input type="number" id="pPct" value="0" step="0.01" min="0"></div>
+    </div>
+    <label class="chk"><input type="checkbox" id="gst"> Add 10% GST to both fees</label>
+    <p class="note">Stripe’s Australian standard pricing is 1.70% + A$0.30 (ex-GST). NimblePay settles over the PayTo / NPP bank rail; the NimblePay fee is an illustrative price the joint venture would set — defaults to a flat 50c with no percentage. All results are illustrative, not a quote.</p>
+  </div>
+
+  <div class="cards">
+
+    <!-- membership -->
+    <div class="card">
+      <h2>1 · Membership (per member, per year)</h2>
+      <div class="row">
+        <div class="field"><label>Membership fee ($)</label><input type="number" id="mAmt" value="30" step="1" min="0"></div>
+        <div class="field"><label>Billed</label>
+          <select id="mFreq">
+            <option value="12" selected>Monthly (×12)</option>
+            <option value="4">Quarterly (×4)</option>
+            <option value="1">Annually (×1)</option>
+          </select>
+        </div>
+      </div>
+      <button class="preset" id="mPreset">Use $400 once-off annual</button>
+      <div class="res">
+        <table class="out">
+          <tr><td>Payments per year</td><td class="v" id="mPays">12</td></tr>
+          <tr><td>Stripe fees / year</td><td class="v" id="mStripe">$0.00</td></tr>
+          <tr><td>NimblePay fees / year</td><td class="v" id="mPayto">$0.00</td></tr>
+        </table>
+        <div class="save"><span class="lbl">Saved per member / year</span><span><span class="amt" id="mSave">$0.00</span><span class="pct" id="mPct"></span></span></div>
+      </div>
+    </div>
+
+    <!-- court -->
+    <div class="card">
+      <h2>2 · Court bookings (per member, per year)</h2>
+      <div class="row">
+        <div class="field"><label>Booking fee ($)</label><input type="number" id="cAmt" value="25" step="1" min="0"></div>
+        <div class="field"><label>Sessions / week</label><input type="number" id="cPerWk" value="1" step="1" min="0"></div>
+      </div>
+      <div class="field"><label>Weeks / year</label><input type="number" id="cWeeks" value="40" step="1" min="0"></div>
+      <div class="res">
+        <table class="out">
+          <tr><td>Bookings per year</td><td class="v" id="cPays">40</td></tr>
+          <tr><td>Spend per year</td><td class="v" id="cSpend">$0</td></tr>
+          <tr><td>Stripe fees / year</td><td class="v" id="cStripe">$0.00</td></tr>
+          <tr><td>NimblePay fees / year</td><td class="v" id="cPayto">$0.00</td></tr>
+        </table>
+        <div class="save"><span class="lbl">Saved per member / year</span><span><span class="amt" id="cSave">$0.00</span><span class="pct" id="cPct"></span></span></div>
+      </div>
+    </div>
+
+    <!-- club -->
+    <div class="card">
+      <h2>3 · Whole club (per year)</h2>
+      <div class="row">
+        <div class="field"><label>Members</label><input type="number" id="clMembers" value="300" step="10" min="0"></div>
+        <div class="field"><label>Court bookings / year (all)</label><input type="number" id="clBookings" value="8000" step="100" min="0"></div>
+      </div>
+      <div class="field"><label>Average booking value ($)</label><input type="number" id="clBookAvg" value="25" step="1" min="0"></div>
+      <p class="note">Membership uses the model in card 1; bookings use the average value here.</p>
+      <div class="res">
+        <table class="out">
+          <tr><td>Stripe fees / year</td><td class="v" id="clStripe">$0</td></tr>
+          <tr><td>NimblePay fees / year</td><td class="v" id="clPayto">$0</td></tr>
+        </table>
+        <div class="save"><span class="lbl">Club saving / year</span><span><span class="amt" id="clSave">$0</span><span class="pct" id="clPct"></span></span></div>
+      </div>
+    </div>
+
+    <!-- network -->
+    <div class="card">
+      <h2>4 · Across the network (per year)</h2>
+      <div class="row">
+        <div class="field"><label>Members (national)</label><input type="number" id="nMembers" value="300000" step="1000" min="0"></div>
+        <div class="field"><label>Court bookings / year (national)</label><input type="number" id="nBookings" value="0" step="10000" min="0"></div>
+      </div>
+      <div class="field"><label>Average booking value ($)</label><input type="number" id="nBookAvg" value="25" step="1" min="0"></div>
+      <p class="note">Tennis Australia cites ~300,000 club members and ~2,300 venues. Membership uses card 1; bookings optional.</p>
+      <div class="res">
+        <table class="out">
+          <tr><td>Stripe fees / year</td><td class="v" id="nStripe">$0</td></tr>
+          <tr><td>NimblePay fees / year</td><td class="v" id="nPayto">$0</td></tr>
+        </table>
+        <div class="save"><span class="lbl">Network saving / year</span><span><span class="amt" id="nSave">$0</span><span class="pct" id="nPct"></span></span></div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="headline">
+    <span class="t">Headline — network saving / year (current inputs)</span>
+    <span class="n" id="hl">$0</span>
+  </div>
+
+  <div class="disc">
+    <strong>Illustrative only — not a quote.</strong> Figures compare Stripe’s published Australian card pricing with an assumed flat NimblePay fee the joint venture would set. They exclude GST unless toggled, assume payments are currently taken by card through ClubSpark, and ignore failed-payment, refund and onboarding handling. NimblePay suits members and regulars; casual one-off bookings are better left on cards, so a real club would run both rails. Savings accrue to clubs (or, until 1 October 2026, to members where clubs currently surcharge).
+  </div>
+
+  <footer>
+    NimblePay · ABN 47 698 042 689 · brumbiesoft.com.au — <em>Engineering intelligence.</em><br>
+    Prepared for discussion with Tennis Australia · Initiated by Chatswood Tennis Club · 4 June 2026
+  </footer>
+</div>
+
+<script>
+(function(){
+  var $=function(id){return document.getElementById(id)};
+  function num(id){var v=parseFloat($(id).value);return isNaN(v)?0:v;}
+  function money(x){
+    var neg=x<0; x=Math.abs(x);
+    var s=(x>=1000)?x.toLocaleString(undefined,{maximumFractionDigits:0}):x.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2});
+    return (neg?'-$':'$')+s;
+  }
+  function gstMul(){return $('gst').checked?1.10:1.0;}
+  function stripeFee(amt){return (amt*num('sRate')/100 + num('sFix'))*gstMul();}
+  function paytoFee(amt){return (num('pFlat') + amt*num('pPct')/100)*gstMul();}
+  function pct(save,base){return base>0?Math.round(save/base*100):0;}
+
+  function setPct(el,save,base){el.textContent = base>0 ? '('+pct(save,base)+'%)' : '';}
+
+  function calc(){
+    // rail labels
+    $('railStripe').textContent = num('sRate').toFixed(2)+'% + '+money(num('sFix'))+' per payment'+($('gst').checked?' (+GST)':'');
+    var pf = num('pFlat'), pp = num('pPct');
+    $('railPayto').textContent = (pp>0?(pp.toFixed(2)+'% + '):'')+money(pf)+' flat per payment'+($('gst').checked?' (+GST)':'');
+
+    // 1 membership
+    var mAmt=num('mAmt'), mFreq=parseFloat($('mFreq').value)||1;
+    $('mPays').textContent=mFreq;
+    var mS=stripeFee(mAmt)*mFreq, mP=paytoFee(mAmt)*mFreq;
+    $('mStripe').textContent=money(mS); $('mPayto').textContent=money(mP);
+    var mSave=mS-mP; $('mSave').textContent=money(mSave); setPct($('mPct'),mSave,mS);
+
+    // 2 court
+    var cAmt=num('cAmt'), cN=num('cPerWk')*num('cWeeks');
+    $('cPays').textContent=cN; $('cSpend').textContent=money(cAmt*cN);
+    var cS=stripeFee(cAmt)*cN, cP=paytoFee(cAmt)*cN;
+    $('cStripe').textContent=money(cS); $('cPayto').textContent=money(cP);
+    var cSave=cS-cP; $('cSave').textContent=money(cSave); setPct($('cPct'),cSave,cS);
+
+    // 3 club  (membership per-member from card 1 + bookings)
+    var members=num('clMembers');
+    var clBook=num('clBookings'), clAvg=num('clBookAvg');
+    var clS = mS*members + stripeFee(clAvg)*clBook;
+    var clP = mP*members + paytoFee(clAvg)*clBook;
+    $('clStripe').textContent=money(clS); $('clPayto').textContent=money(clP);
+    var clSave=clS-clP; $('clSave').textContent=money(clSave); setPct($('clPct'),clSave,clS);
+
+    // 4 network
+    var nMem=num('nMembers'), nBook=num('nBookings'), nAvg=num('nBookAvg');
+    var nS = mS*nMem + stripeFee(nAvg)*nBook;
+    var nP = mP*nMem + paytoFee(nAvg)*nBook;
+    $('nStripe').textContent=money(nS); $('nPayto').textContent=money(nP);
+    var nSave=nS-nP; $('nSave').textContent=money(nSave); setPct($('nPct'),nSave,nS);
+
+    $('hl').textContent=money(nSave);
+  }
+
+  // $400 once-off preset toggle
+  var presetOn=false;
+  $('mPreset').addEventListener('click',function(){
+    if(!presetOn){ $('mAmt').value=400; $('mFreq').value='1'; this.textContent='Back to $30 monthly'; presetOn=true; }
+    else { $('mAmt').value=30; $('mFreq').value='12'; this.textContent='Use $400 once-off annual'; presetOn=false; }
+    calc();
+  });
+
+  // recompute on any input
+  Array.prototype.forEach.call(document.querySelectorAll('input,select'),function(el){
+    el.addEventListener('input',calc); el.addEventListener('change',calc);
+  });
+  calc();
+})();
+</script>
+</body>
+</html>
